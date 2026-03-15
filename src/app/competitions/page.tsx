@@ -3,10 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { EquityCurveChart } from "@/components/EquityCurveChart";
 
 export const dynamic = "force-dynamic";
 
-function PnlBadge({ value }: { value: number }) {
+function PnlCell({ value }: { value: number }) {
   const isPos = value >= 0;
   return (
     <span className={`font-mono font-semibold tabular-nums ${isPos ? "text-emerald-500" : "text-red-500"}`}>
@@ -28,7 +29,10 @@ export default async function CompetitionsPage() {
     include: {
       entries: {
         orderBy: { pnlPct: "desc" },
-        include: { user: { select: { username: true } } },
+        include: {
+          user: { select: { username: true } },
+          snapshots: { orderBy: { createdAt: "asc" } },
+        },
       },
     },
   });
@@ -55,16 +59,31 @@ export default async function CompetitionsPage() {
           <p className="text-muted-foreground text-sm">Check back soon for upcoming events.</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {competitions.map((comp) => {
             const isLive = comp.startTime <= now && comp.endTime >= now;
             const isEnded = comp.endTime < now;
             const daysLeft = Math.ceil((comp.endTime.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
+            // Build chart series — sorted by final pnl desc
+            const chartSeries = comp.entries
+              .filter((e) => e.snapshots.length > 1)
+              .map((e) => ({
+                entryId: e.id,
+                agentName: e.agentName,
+                username: e.user?.username ?? "anon",
+                points: e.snapshots.map((s) => ({
+                  time: Math.floor(s.createdAt.getTime() / 1000),
+                  value: s.pnl,
+                })),
+              }));
+
+            const hasChart = chartSeries.length > 0;
+
             return (
               <Card key={comp.id}>
                 <CardHeader>
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <CardTitle>{comp.name}</CardTitle>
@@ -81,7 +100,9 @@ export default async function CompetitionsPage() {
                         <CardDescription>{comp.description}</CardDescription>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        {isLive ? `${daysLeft}d remaining` : `Ended ${comp.endTime.toLocaleDateString()}`}
+                        {isLive
+                          ? `${daysLeft}d remaining`
+                          : `Ended ${comp.endTime.toLocaleDateString()}`}
                         {" · "}{comp.entries.length} participants
                       </p>
                     </div>
@@ -94,7 +115,31 @@ export default async function CompetitionsPage() {
                   </div>
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="space-y-6">
+                  {/* Equity curve chart */}
+                  {hasChart && (
+                    <div className="rounded-lg border bg-card overflow-hidden">
+                      <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Equity Curves — PnL %
+                        </p>
+                        <div className="flex items-center gap-3">
+                          {chartSeries.map((s, i) => (
+                            <span key={s.entryId} className="flex items-center gap-1.5 text-xs">
+                              <span
+                                className="w-2.5 h-0.5 rounded-full inline-block"
+                                style={{ backgroundColor: ["#10b981","#3b82f6","#f59e0b","#a855f7","#ef4444","#14b8a6"][i % 6] }}
+                              />
+                              {s.agentName}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <EquityCurveChart series={chartSeries} height={260} />
+                    </div>
+                  )}
+
+                  {/* Leaderboard */}
                   {comp.entries.length === 0 ? (
                     <p className="text-center text-muted-foreground text-sm py-8">
                       No entries yet — be the first!
@@ -115,7 +160,7 @@ export default async function CompetitionsPage() {
                       <TableBody>
                         {comp.entries.map((entry, i) => (
                           <TableRow key={entry.id}>
-                            <TableCell className="font-medium text-center">
+                            <TableCell className="text-center">
                               <RankIcon rank={i + 1} />
                             </TableCell>
                             <TableCell className="font-medium">{entry.agentName}</TableCell>
@@ -137,7 +182,7 @@ export default async function CompetitionsPage() {
                               ${entry.totalVolume.toLocaleString()}
                             </TableCell>
                             <TableCell className="text-right">
-                              <PnlBadge value={entry.pnlPct} />
+                              <PnlCell value={entry.pnlPct} />
                             </TableCell>
                           </TableRow>
                         ))}
