@@ -4,13 +4,13 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { token, competitionId, agentName, pnl, volume, exposure, exchange, pair, tradesCount } = body;
+  const { token, competitionId, agentId, agentName, pnl, volume, exposure, exchange, pair, tradesCount } = body;
 
   const userId = await validateToken(token);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const entry = await prisma.competitionEntry.upsert({
-    where: { competitionId_userId: { competitionId, userId } },
+    where: { competitionId_agentId: { competitionId, agentId } },
     update: {
       pnlPct: pnl,
       totalVolume: volume,
@@ -22,7 +22,8 @@ export async function POST(req: Request) {
     create: {
       competitionId,
       userId,
-      agentName,
+      agentId,
+      agentName: agentName ?? agentId,
       exchange,
       pair,
       pnlPct: pnl,

@@ -11,7 +11,7 @@ interface Agent {
   id: string;
   name: string;
   description: string;
-  agentKey: string;
+  agentId: string;
   skills: string[];
   stars: number;
   createdAt: Date;
@@ -36,7 +36,7 @@ export function AgentList({ agents }: { agents: Agent[] }) {
         !q ||
         a.name.toLowerCase().includes(q) ||
         a.description.toLowerCase().includes(q) ||
-        a.agentKey.toLowerCase().includes(q) ||
+        a.agentId.toLowerCase().includes(q) ||
         a.skills.some((s) => s.toLowerCase().includes(q));
       const matchesSkill = !activeSkill || a.skills.includes(activeSkill);
       return matchesQuery && matchesSkill;
@@ -97,12 +97,12 @@ export function AgentList({ agents }: { agents: Agent[] }) {
               <div className="space-y-1.5 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Link
-                    href={`/agents/${agent.agentKey}`}
+                    href={`/agents/${agent.agentId}`}
                     className="text-sm font-medium hover:text-muted-foreground transition-colors"
                   >
                     {agent.name}
                   </Link>
-                  <span className="text-xs text-muted-foreground font-mono">{agent.agentKey}</span>
+                  <span className="text-xs text-muted-foreground font-mono">{agent.agentId}</span>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{agent.description}</p>
                 <div className="flex items-center gap-3 flex-wrap pt-0.5">

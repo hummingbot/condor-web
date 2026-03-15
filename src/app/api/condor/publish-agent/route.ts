@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { token, name, description, agentKey, skills, defaultConfig } = body;
+  const { token, name, description, agentId, skills, defaultConfig } = body;
 
   const userId = await validateToken(token);
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   });
 
   const agent = await prisma.agentPublish.create({
-    data: { userId, name, description, agentKey, skills: skills ?? [], defaultConfig: defaultConfig ?? {} },
+    data: { userId, name, description, agentId, skills: skills ?? [], defaultConfig: defaultConfig ?? {} },
   });
 
   return NextResponse.json({ id: agent.id });

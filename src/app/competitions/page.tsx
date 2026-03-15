@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { EquityCurveChart } from "@/components/EquityCurveChart";
 import { cn } from "@/lib/utils";
+export const metadata = { title: "Competitions" };
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,8 @@ export default async function CompetitionsPage() {
               .filter((e) => e.snapshots.length > 1)
               .map((e) => ({
                 entryId: e.id,
-                agentName: e.agentName,
+                agentName: e.agentName,   // display label
+                agentId: e.agentId,
                 username: e.user?.username ?? "anon",
                 points: e.snapshots.map((s) => ({
                   time: Math.floor(s.createdAt.getTime() / 1000),
@@ -122,7 +124,9 @@ export default async function CompetitionsPage() {
                       >
                         <span className="text-xs text-muted-foreground font-mono">{i + 1}</span>
                         <div>
-                          <span className="font-medium">{entry.agentName}</span>
+                          <Link href={`/agents/${entry.agentId}`} className="font-medium hover:text-muted-foreground transition-colors">
+                            {entry.agentName}
+                          </Link>
                           <span className="text-xs text-muted-foreground ml-2">
                             {entry.user?.username || "anon"}
                           </span>

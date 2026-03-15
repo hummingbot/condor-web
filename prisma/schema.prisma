@@ -20,26 +20,6 @@ model User {
   trades    Trade[]
 }
 
-model Trade {
-  id          String   @id @default(cuid())
-  userId      BigInt
-  user        User     @relation(fields: [userId], references: [id])
-  agentKey    String
-  exchange    String
-  pair        String
-  side        String   // BUY | SELL
-  price       Float
-  amount      Float
-  cost        Float
-  fee         Float    @default(0)
-  realizedPnl Float    @default(0)
-  ts          DateTime
-  createdAt   DateTime @default(now())
-
-  @@index([agentKey])
-  @@index([userId, agentKey])
-}
-
 model WebToken {
   id        String   @id @default(cuid())
   userId    BigInt   @unique
@@ -72,19 +52,24 @@ model ChatMessage {
   pnlSnapshot Float?
   isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
+
+  @@index([agentId])
 }
 
 model AgentPublish {
   id            String   @id @default(cuid())
   userId        BigInt
   user          User     @relation(fields: [userId], references: [id])
+  agentId       String   // Condor agent_id
   name          String
   description   String
-  agentKey      String
   skills        String[]
   defaultConfig Json
   stars         Int      @default(0)
   createdAt     DateTime @default(now())
+
+  @@index([agentId])
+  @@unique([userId, agentId])
 }
 
 model Competition {
@@ -105,7 +90,8 @@ model CompetitionEntry {
   competition   Competition @relation(fields: [competitionId], references: [id])
   userId        BigInt
   user          User        @relation(fields: [userId], references: [id])
-  agentName     String
+  agentId       String      // Condor agent_id
+  agentName     String      // display name (denormalized)
   exchange      String?
   pair          String?
   pnlPct        Float       @default(0)
@@ -115,7 +101,8 @@ model CompetitionEntry {
 
   snapshots     CompetitionSnapshot[]
 
-  @@unique([competitionId, userId])
+  @@unique([competitionId, agentId])
+  @@index([agentId])
 }
 
 model CompetitionSnapshot {
@@ -126,4 +113,24 @@ model CompetitionSnapshot {
   volume    Float
   exposure  Float
   createdAt DateTime         @default(now())
+}
+
+model Trade {
+  id          String   @id @default(cuid())
+  userId      BigInt
+  user        User     @relation(fields: [userId], references: [id])
+  agentId     String   // Condor agent_id
+  exchange    String
+  pair        String
+  side        String   // BUY | SELL
+  price       Float
+  amount      Float
+  cost        Float
+  fee         Float    @default(0)
+  realizedPnl Float    @default(0)
+  ts          DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([agentId])
+  @@index([userId, agentId])
 }

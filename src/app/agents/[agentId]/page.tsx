@@ -15,21 +15,21 @@ function PnlText({ value }: { value: number }) {
   );
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ agentKey: string }> }) {
-  const { agentKey } = await params;
-  const agent = await prisma.agentPublish.findFirst({ where: { agentKey }, select: { name: true } });
-  return { title: agent?.name ?? agentKey };
+export async function generateMetadata({ params }: { params: Promise<{ agentId: string }> }) {
+  const { agentId } = await params;
+  const agent = await prisma.agentPublish.findFirst({ where: { agentId }, select: { name: true } });
+  return { title: agent?.name ?? agentId };
 }
 
 export default async function AgentDetailPage({
   params,
 }: {
-  params: Promise<{ agentKey: string }>;
+  params: Promise<{ agentId: string }>;
 }) {
-  const { agentKey } = await params;
+  const { agentId } = await params;
 
   const agent = await prisma.agentPublish.findFirst({
-    where: { agentKey },
+    where: { agentId },
     include: { user: { select: { username: true } } },
   });
 
@@ -37,7 +37,7 @@ export default async function AgentDetailPage({
 
   // All competition entries for this agent (any exchange/pair)
   const entries = await prisma.competitionEntry.findMany({
-    where: { agentName: agent.name },
+    where: { agentId },
     include: {
       competition: { select: { id: true, name: true } },
       snapshots: { orderBy: { createdAt: "asc" } },
@@ -47,7 +47,7 @@ export default async function AgentDetailPage({
 
   // Recent trades across all exchanges/pairs
   const trades = await prisma.trade.findMany({
-    where: { agentKey },
+    where: { agentId },
     orderBy: { ts: "desc" },
     take: 100,
   });
@@ -88,7 +88,7 @@ export default async function AgentDetailPage({
         <div className="space-y-2">
           <div className="flex items-baseline gap-3">
             <h1 className="text-xl font-semibold">{agent.name}</h1>
-            <span className="text-xs text-muted-foreground font-mono">{agent.agentKey}</span>
+            <span className="text-xs text-muted-foreground font-mono">{agent.agentId}</span>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">{agent.description}</p>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">

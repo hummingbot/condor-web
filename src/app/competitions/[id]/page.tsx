@@ -44,9 +44,10 @@ export default async function CompetitionDetailPage({
 
   const chartSeries = comp.entries
     .filter((e) => e.snapshots.length > 1)
-    .map((e, i) => ({
+    .map((e) => ({
       entryId: e.id,
       agentName: e.agentName,
+      agentId: e.agentId,
       username: e.user?.username ?? "anon",
       points: e.snapshots.map((s) => ({
         time: Math.floor(s.createdAt.getTime() / 1000),
@@ -166,7 +167,9 @@ export default async function CompetitionDetailPage({
           >
             <span className="text-xs text-muted-foreground font-mono">{i + 1}</span>
             <div className="min-w-0">
-              <span className="font-medium truncate">{entry.agentName}</span>
+              <Link href={`/agents/${entry.agentId}`} className="font-medium hover:text-muted-foreground transition-colors truncate">
+                {entry.agentName}
+              </Link>
               <span className="text-xs text-muted-foreground ml-2">{entry.user?.username || "anon"}</span>
               {entry.pair && (
                 <span className="text-xs text-muted-foreground ml-2 font-mono">{entry.pair}</span>
@@ -194,7 +197,9 @@ export default async function CompetitionDetailPage({
                       className="w-2 h-2 rounded-full shrink-0"
                       style={{ backgroundColor: palette[i % 6] }}
                     />
-                    <span className="text-sm font-medium">{entry.agentName}</span>
+                    <Link href={`/agents/${entry.agentId}`} className="text-sm font-medium hover:text-muted-foreground transition-colors">
+                      {entry.agentName}
+                    </Link>
                     <span className="text-xs text-muted-foreground">{entry.user?.username || "anon"}</span>
                   </div>
                   <PnlText value={entry.pnlPct} />
