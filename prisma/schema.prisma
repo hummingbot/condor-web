@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        BigInt   @id
+  username  String?
+  createdAt DateTime @default(now())
+
+  webToken  WebToken?
+  messages  ChatMessage[]
+  pending   PendingMessage[]
+  agents    AgentPublish[]
+  entries   CompetitionEntry[]
+}
+
+model WebToken {
+  id        String   @id @default(cuid())
+  userId    BigInt   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model PendingMessage {
+  id        String   @id @default(cuid())
+  userId    BigInt
+  user      User     @relation(fields: [userId], references: [id])
+  message   String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  userId      BigInt
+  user        User     @relation(fields: [userId], references: [id])
+  agentId     String?
+  source      String   // "tick" | "manual"
+  prompt      String?
+  response    String
+  actionsJson Json?
+  exchange    String?
+  pair        String?
+  pnlSnapshot Float?
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model AgentPublish {
+  id            String   @id @default(cuid())
+  userId        BigInt
+  user          User     @relation(fields: [userId], references: [id])
+  name          String
+  description   String
+  agentKey      String
+  skills        String[]
+  defaultConfig Json
+  stars         Int      @default(0)
+  createdAt     DateTime @default(now())
+}
+
+model Competition {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  prizePool   String?
+  createdAt   DateTime @default(now())
+
+  entries     CompetitionEntry[]
+}
+
+model CompetitionEntry {
+  id            String      @id @default(cuid())
+  competitionId String
+  competition   Competition @relation(fields: [competitionId], references: [id])
+  userId        BigInt
+  user          User        @relation(fields: [userId], references: [id])
+  agentName     String
+  exchange      String?
+  pair          String?
+  pnlPct        Float       @default(0)
+  totalVolume   Float       @default(0)
+  tradesCount   Int         @default(0)
+  lastUpdatedAt DateTime    @default(now())
+
+  snapshots     CompetitionSnapshot[]
+
+  @@unique([competitionId, userId])
+}
+
+model CompetitionSnapshot {
+  id        String           @id @default(cuid())
+  entryId   String
+  entry     CompetitionEntry @relation(fields: [entryId], references: [id])
+  pnl       Float
+  volume    Float
+  exposure  Float
+  createdAt DateTime         @default(now())
+}
