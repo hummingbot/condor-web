@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavLinks } from "@/components/NavLinks";
 import "./globals.css";
 
@@ -20,40 +22,53 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground min-h-screen antialiased`}>
-        <header className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur">
-          <div className="max-w-5xl mx-auto flex h-12 items-center justify-between px-6">
-            <div className="flex items-center gap-6">
-              <Link href="/" className="text-sm font-semibold tracking-tight">
-                Condor
-              </Link>
-              <NavLinks />
-            </div>
-            <div className="flex items-center gap-4">
-              <a
-                href="https://docs.hummingbot.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Docs
-              </a>
-              <a
-                href="https://skills.hummingbot.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Skills
-              </a>
-            </div>
-          </div>
-        </header>
+        <ThemeProvider>
+          <header className="sticky top-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur">
+            <div className="max-w-5xl mx-auto flex h-12 items-center justify-between px-6">
+              <div className="flex items-center gap-5">
+                <Link href="/" className="text-sm font-semibold tracking-tight">
+                  Condor
+                </Link>
+                {/* Desktop nav */}
+                <div className="hidden md:block">
+                  <NavLinks />
+                </div>
+              </div>
 
-        <main className="max-w-5xl mx-auto px-6 py-10">
-          {children}
-        </main>
+              <div className="flex items-center gap-4">
+                <div className="hidden md:flex items-center gap-4">
+                  <a
+                    href="https://docs.hummingbot.org"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Docs
+                  </a>
+                  <a
+                    href="https://skills.hummingbot.org"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Skills
+                  </a>
+                </div>
+                <ThemeToggle />
+                {/* Mobile nav */}
+                <div className="md:hidden">
+                  <NavLinks mobile />
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <main className="max-w-5xl mx-auto px-6 py-10">
+            {children}
+          </main>
+        </ThemeProvider>
       </body>
     </html>
   );

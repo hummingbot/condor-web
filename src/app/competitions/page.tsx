@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { EquityCurveChart } from "@/components/EquityCurveChart";
 import { cn } from "@/lib/utils";
@@ -64,7 +65,9 @@ export default async function CompetitionsPage() {
                 {/* Header */}
                 <div className="flex items-baseline justify-between">
                   <div className="flex items-baseline gap-3">
-                    <h2 className="text-base font-medium">{comp.name}</h2>
+                    <Link href={`/competitions/${comp.id}`} className="text-base font-medium hover:text-muted-foreground transition-colors">
+                      {comp.name}
+                    </Link>
                     {isLive && (
                       <span className="text-xs text-emerald-500 flex items-center gap-1">
                         <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse inline-block" />
