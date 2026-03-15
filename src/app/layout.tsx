@@ -1,38 +1,83 @@
 import type { Metadata } from "next";
-import { Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import "./globals.css";
 
-const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
   title: "Condor — AI Trading Agents",
   description: "Community hub for Condor trading agent users",
 };
 
+const navLinks = [
+  { href: "/chat", label: "Chat" },
+  { href: "/agents", label: "Agents" },
+  { href: "/competitions", label: "Competitions" },
+];
+
+const externalLinks = [
+  { href: "https://docs.hummingbot.org", label: "Install" },
+  { href: "https://skills.hummingbot.org", label: "Skills" },
+];
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${mono.variable} bg-zinc-950 text-zinc-100 min-h-screen font-sans antialiased`}>
-        <nav className="border-b border-zinc-800 px-6 py-3 flex items-center gap-6">
-          <Link href="/" className="text-emerald-400 font-bold text-lg tracking-tight">
-            🦅 Condor
-          </Link>
-          <div className="flex items-center gap-5 ml-4 text-sm text-zinc-400">
-            <Link href="/chat" className="hover:text-zinc-100 transition-colors">Chat</Link>
-            <Link href="/agents" className="hover:text-zinc-100 transition-colors">Agents</Link>
-            <Link href="/competitions" className="hover:text-zinc-100 transition-colors">Competitions</Link>
-            <a href="https://docs.hummingbot.org" target="_blank" rel="noopener noreferrer"
-               className="hover:text-zinc-100 transition-colors">
-              Install ↗
-            </a>
-            <a href="https://skills.hummingbot.org" target="_blank" rel="noopener noreferrer"
-               className="hover:text-zinc-100 transition-colors">
-              Skills ↗
-            </a>
+      <body className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground min-h-screen antialiased`}>
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="max-w-7xl mx-auto flex h-14 items-center gap-6 px-6">
+            <Link href="/" className="flex items-center gap-2 font-semibold">
+              <span className="text-xl">🦅</span>
+              <span>Condor</span>
+            </Link>
+
+            <Separator orientation="vertical" className="h-5" />
+
+            <nav className="flex items-center gap-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="ml-auto flex items-center gap-1">
+              {externalLinks.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent inline-flex items-center gap-1"
+                >
+                  {link.label}
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              ))}
+            </div>
           </div>
-        </nav>
-        <main className="max-w-7xl mx-auto px-6 py-8">{children}</main>
+        </header>
+
+        <main className="max-w-7xl mx-auto px-6 py-8">
+          {children}
+        </main>
+
+        <footer className="border-t mt-16">
+          <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between text-sm text-muted-foreground">
+            <span>🦅 Condor by Hummingbot</span>
+            <span>Built with open-source AI trading infrastructure</span>
+          </div>
+        </footer>
       </body>
     </html>
   );

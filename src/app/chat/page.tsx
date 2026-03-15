@@ -1,6 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface ChatMessage {
   id: string;
@@ -15,30 +22,84 @@ interface ChatMessage {
   user: { username?: string };
 }
 
+interface Message {
+  role: "user" | "agent";
+  text: string;
+}
+
+function FeedCard({ msg }: { msg: ChatMessage }) {
+  const isPositive = msg.pnlSnapshot !== undefined && msg.pnlSnapshot >= 0;
+
+  return (
+    <Card className="hover:border-ring/50 transition-colors">
+      <CardContent className="pt-4 pb-4 space-y-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Avatar className="h-5 w-5">
+            <AvatarFallback className="text-[9px]">
+              {(msg.user?.username || "A")[0].toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-xs font-medium">{msg.user?.username || "anon"}</span>
+          {msg.exchange && <Badge variant="outline" className="text-xs h-4 px-1.5">{msg.exchange}</Badge>}
+          {msg.pair && <Badge variant="outline" className="text-xs h-4 px-1.5 font-mono">{msg.pair}</Badge>}
+          {msg.pnlSnapshot !== undefined && (
+            <Badge
+              variant="outline"
+              className={`text-xs h-4 px-1.5 font-mono ml-auto ${isPositive ? "text-emerald-500 border-emerald-500/30" : "text-red-500 border-red-500/30"}`}
+            >
+              {isPositive ? "+" : ""}{msg.pnlSnapshot.toFixed(2)}%
+            </Badge>
+          )}
+          <span className="text-xs text-muted-foreground ml-auto">
+            {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
+
+        {msg.prompt && (
+          <p className="text-xs text-muted-foreground border-l-2 border-muted pl-3 leading-relaxed">
+            {msg.prompt}
+          </p>
+        )}
+        <p className="text-sm leading-relaxed">{msg.response}</p>
+
+        <div className="flex items-center gap-1.5 pt-1">
+          <Badge variant="secondary" className="text-xs h-4 px-1.5">
+            {msg.source === "tick" ? "⚡ tick" : "💬 manual"}
+          </Badge>
+          {msg.agentId && (
+            <span className="text-xs text-muted-foreground">{msg.agentId}</span>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ChatPage() {
   const [feed, setFeed] = useState<ChatMessage[]>([]);
-  const [token, setToken] = useState("");
+  const [tokenInput, setTokenInput] = useState("");
   const [savedToken, setSavedToken] = useState("");
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Load token from localStorage
   useEffect(() => {
     const t = localStorage.getItem("condor_token") || "";
     setSavedToken(t);
   }, []);
 
-  // Fetch public feed
   useEffect(() => {
     fetch("/api/chat/feed")
       .then((r) => r.json())
       .then(setFeed)
       .catch(console.error);
+    const interval = setInterval(() => {
+      fetch("/api/chat/feed").then((r) => r.json()).then(setFeed).catch(console.error);
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
 
-  // SSE stream for manual chat responses
   useEffect(() => {
     if (!savedToken) return;
     const es = new EventSource(`/api/chat/stream?token=${savedToken}`);
@@ -54,112 +115,158 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const saveToken = () => {
-    localStorage.setItem("condor_token", token);
-    setSavedToken(token);
+  const connect = () => {
+    localStorage.setItem("condor_token", tokenInput);
+    setSavedToken(tokenInput);
+  };
+
+  const disconnect = () => {
+    localStorage.removeItem("condor_token");
+    setSavedToken("");
+    setMessages([]);
   };
 
   const send = async () => {
-    if (!input.trim() || !savedToken) return;
-    setMessages((prev) => [...prev, { role: "user", text: input }]);
+    if (!input.trim() || !savedToken || sending) return;
+    const msg = input.trim();
+    setMessages((prev) => [...prev, { role: "user", text: msg }]);
     setSending(true);
     setInput("");
     await fetch("/api/chat/message", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: savedToken, message: input }),
+      body: JSON.stringify({ token: savedToken, message: msg }),
     });
   };
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-120px)]">
+    <div className="flex gap-6 h-[calc(100vh-160px)]">
       {/* Public feed */}
-      <div className="flex-1 overflow-y-auto space-y-4">
-        <h2 className="text-zinc-400 text-sm font-medium uppercase tracking-wider mb-4">Live Feed</h2>
-        {feed.map((msg) => (
-          <div key={msg.id} className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 space-y-2">
-            <div className="flex items-center gap-2 text-xs text-zinc-500">
-              <span className="text-emerald-400">{msg.user?.username || "anon"}</span>
-              {msg.exchange && <span>· {msg.exchange}</span>}
-              {msg.pair && <span>{msg.pair}</span>}
-              {msg.pnlSnapshot !== undefined && (
-                <span className={msg.pnlSnapshot >= 0 ? "text-emerald-400" : "text-red-400"}>
-                  {msg.pnlSnapshot >= 0 ? "+" : ""}{msg.pnlSnapshot.toFixed(2)}%
-                </span>
-              )}
-              <span className="ml-auto">{new Date(msg.createdAt).toLocaleTimeString()}</span>
-            </div>
-            {msg.prompt && (
-              <p className="text-zinc-400 text-sm border-l-2 border-zinc-700 pl-3">{msg.prompt}</p>
-            )}
-            <p className="text-zinc-100 text-sm">{msg.response}</p>
+      <div className="flex-1 flex flex-col min-w-0 gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Live Feed</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">Real-time agent activity from connected Condor instances</p>
           </div>
-        ))}
-        {feed.length === 0 && (
-          <p className="text-zinc-600 text-sm">No public messages yet. Connect your Condor to start.</p>
-        )}
-      </div>
-
-      {/* Manual chat */}
-      <div className="w-96 flex flex-col border border-zinc-800 rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-zinc-800 bg-zinc-900">
-          <h2 className="text-sm font-medium text-zinc-300">Chat with your agent</h2>
+          <Badge variant="secondary">{feed.length} messages</Badge>
         </div>
 
-        {!savedToken ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 gap-3">
-            <p className="text-zinc-400 text-sm text-center">
-              Run <code className="text-emerald-400">/webtoken</code> in Condor, then paste your token here
-            </p>
-            <input
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Paste token..."
-              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-500"
-            />
-            <button onClick={saveToken}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded px-3 py-2 transition-colors">
-              Connect
-            </button>
+        <Separator />
+
+        <ScrollArea className="flex-1">
+          <div className="space-y-3 pr-2">
+            {feed.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+                <span className="text-4xl">📡</span>
+                <h3 className="font-semibold">No public messages yet</h3>
+                <p className="text-muted-foreground text-sm max-w-xs">
+                  Connect your Condor instance and enable{" "}
+                  <code className="bg-muted px-1 py-0.5 rounded text-xs">/webchat on</code>
+                </p>
+              </div>
+            ) : (
+              feed.map((msg) => <FeedCard key={msg.id} msg={msg} />)
+            )}
           </div>
-        ) : (
-          <>
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {messages.map((m, i) => (
-                <div key={i} className={`text-sm ${m.role === "user" ? "text-right" : "text-left"}`}>
-                  <span className={`inline-block max-w-[85%] rounded-lg px-3 py-2 ${
-                    m.role === "user"
-                      ? "bg-emerald-900 text-emerald-100"
-                      : "bg-zinc-800 text-zinc-100"
-                  }`}>
-                    {m.text}
-                  </span>
-                </div>
-              ))}
-              {sending && (
-                <div className="text-left text-sm">
-                  <span className="inline-block bg-zinc-800 text-zinc-400 rounded-lg px-3 py-2">
-                    thinking...
-                  </span>
-                </div>
+        </ScrollArea>
+      </div>
+
+      {/* Manual chat panel */}
+      <div className="w-[360px] shrink-0 flex flex-col">
+        <Card className="flex flex-col flex-1 overflow-hidden">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">Chat with your agent</CardTitle>
+              {savedToken && (
+                <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground" onClick={disconnect}>
+                  Disconnect
+                </Button>
               )}
-              <div ref={bottomRef} />
             </div>
-            <div className="border-t border-zinc-800 p-3 flex gap-2">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && send()}
-                placeholder="Ask your agent..."
-                className="flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-100 outline-none focus:border-emerald-500"
-              />
-              <button onClick={send} disabled={sending}
-                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm rounded px-3 py-2 transition-colors">
-                Send
-              </button>
-            </div>
-          </>
-        )}
+            {savedToken && (
+              <div className="flex items-center gap-1.5 text-xs text-emerald-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                Connected
+              </div>
+            )}
+          </CardHeader>
+
+          <Separator />
+
+          {!savedToken ? (
+            <CardContent className="flex-1 flex flex-col items-center justify-center gap-4 py-8">
+              <span className="text-3xl">🔑</span>
+              <div className="text-center space-y-1">
+                <p className="text-sm font-medium">Connect your Condor</p>
+                <p className="text-xs text-muted-foreground">
+                  Run <code className="bg-muted px-1 py-0.5 rounded">/webtoken</code> in your Condor bot
+                </p>
+              </div>
+              <div className="w-full space-y-2">
+                <Input
+                  value={tokenInput}
+                  onChange={(e) => setTokenInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && connect()}
+                  placeholder="Paste your token..."
+                  className="text-sm"
+                />
+                <Button onClick={connect} className="w-full" disabled={!tokenInput}>
+                  Connect
+                </Button>
+              </div>
+            </CardContent>
+          ) : (
+            <>
+              <ScrollArea className="flex-1 px-4 py-3">
+                <div className="space-y-3">
+                  {messages.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-8">
+                      Send a message to your agent
+                    </p>
+                  )}
+                  {messages.map((m, i) => (
+                    <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm leading-relaxed ${
+                        m.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground"
+                      }`}>
+                        {m.text}
+                      </div>
+                    </div>
+                  ))}
+                  {sending && (
+                    <div className="flex justify-start">
+                      <div className="bg-muted rounded-lg px-3 py-2 text-sm text-muted-foreground">
+                        <span className="inline-flex gap-1">
+                          <span className="animate-bounce">·</span>
+                          <span className="animate-bounce [animation-delay:100ms]">·</span>
+                          <span className="animate-bounce [animation-delay:200ms]">·</span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={bottomRef} />
+                </div>
+              </ScrollArea>
+
+              <Separator />
+              <div className="p-3 flex gap-2">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && send()}
+                  placeholder="Ask your agent..."
+                  className="text-sm"
+                  disabled={sending}
+                />
+                <Button onClick={send} disabled={sending || !input.trim()} size="sm">
+                  Send
+                </Button>
+              </div>
+            </>
+          )}
+        </Card>
       </div>
     </div>
   );

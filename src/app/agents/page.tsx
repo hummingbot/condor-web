@@ -1,4 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 
 export const dynamic = "force-dynamic";
 
@@ -9,52 +14,80 @@ export default async function AgentsPage() {
   });
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold text-zinc-100 mb-1">Agent Directory</h1>
-      <p className="text-zinc-500 text-sm mb-6">Community-published agents. Clone into your Condor instance.</p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {agents.map((agent) => (
-          <div key={agent.id} className="bg-zinc-900 border border-zinc-800 rounded-lg p-5 space-y-3 hover:border-zinc-600 transition-colors">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-zinc-100 font-medium">{agent.name}</h3>
-                <p className="text-zinc-500 text-xs mt-0.5">by {agent.user?.username || "anon"}</p>
-              </div>
-              <span className="text-zinc-400 text-xs">⭐ {agent.stars}</span>
-            </div>
-
-            <p className="text-zinc-400 text-sm">{agent.description}</p>
-
-            <div className="flex flex-wrap gap-1.5">
-              {agent.skills.map((skill) => (
-                <span key={skill} className="bg-zinc-800 text-zinc-400 text-xs px-2 py-0.5 rounded-full">
-                  {skill}
-                </span>
-              ))}
-              <span className="bg-emerald-950 text-emerald-400 text-xs px-2 py-0.5 rounded-full">
-                {agent.agentKey}
-              </span>
-            </div>
-
-            <div className="flex gap-2 pt-1">
-              <button className="flex-1 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded px-3 py-1.5 transition-colors">
-                ⭐ Star
-              </button>
-              <button className="flex-1 text-xs bg-emerald-900 hover:bg-emerald-800 text-emerald-300 rounded px-3 py-1.5 transition-colors">
-                Clone
-              </button>
-            </div>
-          </div>
-        ))}
-
-        {agents.length === 0 && (
-          <div className="col-span-3 text-center py-16 text-zinc-600">
-            <p className="text-lg mb-2">No agents published yet</p>
-            <p className="text-sm">Run <code className="text-emerald-400">/publish</code> in Condor to share yours</p>
-          </div>
-        )}
+    <div className="space-y-6">
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Agent Directory</h1>
+          <p className="text-muted-foreground mt-1">
+            Community-published trading agents. Clone into your Condor instance.
+          </p>
+        </div>
+        <Badge variant="secondary">{agents.length} agents</Badge>
       </div>
+
+      <Separator />
+
+      {agents.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
+          <span className="text-5xl">🤖</span>
+          <h3 className="text-lg font-semibold">No agents published yet</h3>
+          <p className="text-muted-foreground text-sm max-w-sm">
+            Run <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/publish</code> in
+            your Condor Telegram bot to share your agent here.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {agents.map((agent) => (
+            <Card key={agent.id} className="flex flex-col hover:border-ring transition-colors">
+              <CardHeader className="pb-3">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="text-lg bg-secondary">
+                      {agent.name[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base leading-tight">{agent.name}</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      by {agent.user?.username || "anon"}
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground flex items-center gap-0.5 shrink-0">
+                    ⭐ {agent.stars}
+                  </span>
+                </div>
+              </CardHeader>
+
+              <CardContent className="flex-1 pb-3">
+                <CardDescription className="text-sm leading-relaxed">
+                  {agent.description}
+                </CardDescription>
+
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  <Badge variant="outline" className="text-xs font-mono">
+                    {agent.agentKey}
+                  </Badge>
+                  {agent.skills.map((skill) => (
+                    <Badge key={skill} variant="secondary" className="text-xs">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+
+              <CardFooter className="gap-2 pt-0">
+                <Button variant="outline" size="sm" className="flex-1">
+                  ⭐ Star
+                </Button>
+                <Button size="sm" className="flex-1">
+                  Clone →
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
