@@ -3,17 +3,11 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { EquityCurveChart } from "@/components/EquityCurveChart";
+import { PnlText } from "@/components/PnlText";
+import { CHART_PALETTE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
-
-function PnlText({ value }: { value: number }) {
-  return (
-    <span className={cn("font-mono tabular-nums text-xs", value >= 0 ? "text-emerald-500" : "text-red-400")}>
-      {value >= 0 ? "+" : ""}{value.toFixed(4)}
-    </span>
-  );
-}
 
 export async function generateMetadata({ params }: { params: Promise<{ agentId: string }> }) {
   const { agentId } = await params;
@@ -75,7 +69,7 @@ export default async function AgentDetailPage({
     trades.map((t) => [`${t.exchange}:${t.pair}`, { exchange: t.exchange, pair: t.pair }])
   ).values()];
 
-  const palette = ["#10b981","#3b82f6","#f59e0b","#a855f7","#ef4444","#14b8a6"];
+  
 
   return (
     <div className="max-w-3xl space-y-10">
@@ -148,7 +142,7 @@ export default async function AgentDetailPage({
             <div className="flex items-center gap-5">
               {chartSeries.map((s, i) => (
                 <span key={s.entryId} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="w-3 h-px inline-block shrink-0" style={{ backgroundColor: palette[i % 6] }} />
+                  <span className="w-3 h-px inline-block shrink-0" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }} />
                   {s.agentName}
                 </span>
               ))}
@@ -205,7 +199,7 @@ export default async function AgentDetailPage({
                   </span>
                   <div className="text-right">
                     {t.realizedPnl !== 0 ? (
-                      <PnlText value={t.realizedPnl} />
+                      <PnlText value={t.realizedPnl} percent={false} decimals={4} className="text-xs" />
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
@@ -232,9 +226,7 @@ export default async function AgentDetailPage({
                     <span className="text-muted-foreground font-mono">{e.pair} · {e.exchange}</span>
                   )}
                 </div>
-                <span className={cn("font-mono", e.pnlPct >= 0 ? "text-emerald-500" : "text-red-400")}>
-                  {e.pnlPct >= 0 ? "+" : ""}{e.pnlPct.toFixed(2)}%
-                </span>
+                <PnlText value={e.pnlPct} className="text-xs" />
               </div>
             ))}
           </div>

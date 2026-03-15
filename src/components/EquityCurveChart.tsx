@@ -6,11 +6,11 @@ import {
   ColorType,
   LineStyle,
   AreaSeries,
-  HistogramSeries,
   type IChartApi,
   type UTCTimestamp,
 } from "lightweight-charts";
 import { cn } from "@/lib/utils";
+import { CHART_PALETTE } from "@/lib/constants";
 
 interface Point { time: number; value: number }
 interface SeriesData {
@@ -19,8 +19,6 @@ interface SeriesData {
   username: string;
   points: Point[];
 }
-
-const PALETTE = ["#10b981","#3b82f6","#f59e0b","#a855f7","#ef4444","#14b8a6"];
 const RANGES = ["1D","7D","All"] as const;
 type Range = typeof RANGES[number];
 
@@ -83,7 +81,7 @@ export function EquityCurveChart({ series, height = 260 }: Props) {
       const filtered = filterByRange(s.points, range);
       if (filtered.length === 0) return;
 
-      const color = PALETTE[i % PALETTE.length];
+      const color = CHART_PALETTE[i % CHART_PALETTE.length];
       const isPositiveFinal = filtered[filtered.length - 1].value >= 0;
 
       const area = chart.addSeries(AreaSeries, {

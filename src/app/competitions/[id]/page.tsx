@@ -2,17 +2,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { EquityCurveChart } from "@/components/EquityCurveChart";
-import { cn } from "@/lib/utils";
+import { PnlText } from "@/components/PnlText";
+import { CHART_PALETTE } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
-
-function PnlText({ value }: { value: number }) {
-  return (
-    <span className={cn("font-mono tabular-nums", value >= 0 ? "text-emerald-500" : "text-red-400")}>
-      {value >= 0 ? "+" : ""}{value.toFixed(2)}%
-    </span>
-  );
-}
 
 export default async function CompetitionDetailPage({
   params,
@@ -55,7 +48,7 @@ export default async function CompetitionDetailPage({
       })),
     }));
 
-  const palette = ["#10b981","#3b82f6","#f59e0b","#a855f7","#ef4444","#14b8a6"];
+
 
   return (
     <div className="max-w-3xl space-y-10">
@@ -110,7 +103,7 @@ export default async function CompetitionDetailPage({
                 const last = s.points[s.points.length - 1]?.value ?? 0;
                 return (
                   <span key={s.entryId} className="flex items-center gap-1.5 text-xs">
-                    <span className="w-3 h-px inline-block shrink-0" style={{ backgroundColor: palette[i % 6] }} />
+                    <span className="w-3 h-px inline-block shrink-0" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }} />
                     <span className="text-muted-foreground">{s.agentName}</span>
                     <PnlText value={last} />
                   </span>
@@ -128,29 +121,22 @@ export default async function CompetitionDetailPage({
       {comp.entries.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
           {[
-            {
-              label: "Total volume",
-              value: `$${comp.entries.reduce((s, e) => s + e.totalVolume, 0).toLocaleString()}`,
-            },
-            {
-              label: "Total trades",
-              value: comp.entries.reduce((s, e) => s + e.tradesCount, 0).toLocaleString(),
-            },
-            {
-              label: "Best PnL",
-              value: comp.entries[0]
-                ? `${comp.entries[0].pnlPct >= 0 ? "+" : ""}${comp.entries[0].pnlPct.toFixed(2)}%`
-                : "—",
-              color: comp.entries[0]?.pnlPct >= 0 ? "text-emerald-500" : "text-red-400",
-            },
+            { label: "Total volume", value: `$${comp.entries.reduce((s, e) => s + e.totalVolume, 0).toLocaleString()}` },
+            { label: "Total trades", value: comp.entries.reduce((s, e) => s + e.tradesCount, 0).toLocaleString() },
           ].map((stat) => (
             <div key={stat.label} className="rounded-lg border border-border/50 px-4 py-3">
               <p className="text-xs text-muted-foreground">{stat.label}</p>
-              <p className={cn("text-base font-semibold tabular-nums mt-0.5 font-mono", stat.color)}>
-                {stat.value}
-              </p>
+              <p className="text-base font-semibold tabular-nums mt-0.5 font-mono">{stat.value}</p>
             </div>
           ))}
+          <div className="rounded-lg border border-border/50 px-4 py-3">
+            <p className="text-xs text-muted-foreground">Best PnL</p>
+            {comp.entries[0] ? (
+              <PnlText value={comp.entries[0].pnlPct} className="text-base font-semibold mt-0.5 block" />
+            ) : (
+              <p className="text-base font-semibold mt-0.5 text-muted-foreground">—</p>
+            )}
+          </div>
         </div>
       )}
 
@@ -195,7 +181,7 @@ export default async function CompetitionDetailPage({
                   <div className="flex items-center gap-2">
                     <span
                       className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: palette[i % 6] }}
+                      style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }}
                     />
                     <Link href={`/agents/${entry.agentId}`} className="text-sm font-medium hover:text-muted-foreground transition-colors">
                       {entry.agentName}

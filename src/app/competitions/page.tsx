@@ -1,18 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { EquityCurveChart } from "@/components/EquityCurveChart";
-import { cn } from "@/lib/utils";
+import { PnlText } from "@/components/PnlText";
+import { CHART_PALETTE } from "@/lib/constants";
+
 export const metadata = { title: "Competitions" };
-
 export const dynamic = "force-dynamic";
-
-function PnlText({ value }: { value: number }) {
-  return (
-    <span className={`font-mono tabular-nums ${value >= 0 ? "text-emerald-500" : "text-red-400"}`}>
-      {value >= 0 ? "+" : ""}{value.toFixed(2)}%
-    </span>
-  );
-}
 
 export default async function CompetitionsPage() {
   const competitions = await prisma.competition.findMany({
@@ -53,7 +46,7 @@ export default async function CompetitionsPage() {
               .filter((e) => e.snapshots.length > 1)
               .map((e) => ({
                 entryId: e.id,
-                agentName: e.agentName,   // display label
+                agentName: e.agentName,
                 agentId: e.agentId,
                 username: e.user?.username ?? "anon",
                 points: e.snapshots.map((s) => ({
@@ -67,7 +60,10 @@ export default async function CompetitionsPage() {
                 {/* Header */}
                 <div className="flex items-baseline justify-between">
                   <div className="flex items-baseline gap-3">
-                    <Link href={`/competitions/${comp.id}`} className="text-base font-medium hover:text-muted-foreground transition-colors">
+                    <Link
+                      href={`/competitions/${comp.id}`}
+                      className="text-base font-medium hover:text-muted-foreground transition-colors"
+                    >
                       {comp.name}
                     </Link>
                     {isLive && (
@@ -82,23 +78,20 @@ export default async function CompetitionsPage() {
                   )}
                 </div>
 
-                {/* Chart */}
+                {/* Equity chart */}
                 {chartSeries.length > 0 && (
                   <div className="rounded-lg border border-border/50 overflow-hidden">
                     <div className="px-4 pt-3 pb-1 flex items-center gap-5 flex-wrap">
                       {chartSeries.map((s, i) => {
                         const last = s.points[s.points.length - 1]?.value ?? 0;
-                        const isPos = last >= 0;
                         return (
                           <span key={s.entryId} className="flex items-center gap-1.5 text-xs">
                             <span
                               className="w-3 h-px inline-block shrink-0"
-                              style={{ backgroundColor: ["#10b981","#3b82f6","#f59e0b","#a855f7","#ef4444","#14b8a6"][i % 6] }}
+                              style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }}
                             />
                             <span className="text-muted-foreground">{s.agentName}</span>
-                            <span className={cn("font-mono", isPos ? "text-emerald-500" : "text-red-400")}>
-                              {isPos ? "+" : ""}{last.toFixed(2)}%
-                            </span>
+                            <PnlText value={last} className="text-xs" />
                           </span>
                         );
                       })}
@@ -124,7 +117,10 @@ export default async function CompetitionsPage() {
                       >
                         <span className="text-xs text-muted-foreground font-mono">{i + 1}</span>
                         <div>
-                          <Link href={`/agents/${entry.agentId}`} className="font-medium hover:text-muted-foreground transition-colors">
+                          <Link
+                            href={`/agents/${entry.agentId}`}
+                            className="font-medium hover:text-muted-foreground transition-colors"
+                          >
                             {entry.agentName}
                           </Link>
                           <span className="text-xs text-muted-foreground ml-2">
@@ -142,8 +138,8 @@ export default async function CompetitionsPage() {
                         <span className="text-xs text-muted-foreground tabular-nums">
                           ${entry.totalVolume.toLocaleString()}
                         </span>
-                        <div className="text-right text-sm">
-                          <PnlText value={entry.pnlPct} />
+                        <div className="text-right">
+                          <PnlText value={entry.pnlPct} className="text-sm" />
                         </div>
                       </div>
                     ))}

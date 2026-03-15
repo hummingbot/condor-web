@@ -14,7 +14,7 @@ interface Agent {
   agentId: string;
   skills: string[];
   stars: number;
-  createdAt: Date;
+  createdAt: string | Date; // serialized to string when passed from server component
   user: { username: string | null } | null;
 }
 
