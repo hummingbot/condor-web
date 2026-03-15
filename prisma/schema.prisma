@@ -17,6 +17,27 @@ model User {
   pending   PendingMessage[]
   agents    AgentPublish[]
   entries   CompetitionEntry[]
+  trades    Trade[]
+}
+
+model Trade {
+  id          String   @id @default(cuid())
+  userId      BigInt
+  user        User     @relation(fields: [userId], references: [id])
+  agentKey    String
+  exchange    String
+  pair        String
+  side        String   // BUY | SELL
+  price       Float
+  amount      Float
+  cost        Float
+  fee         Float    @default(0)
+  realizedPnl Float    @default(0)
+  ts          DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([agentKey])
+  @@index([userId, agentKey])
 }
 
 model WebToken {
