@@ -11,7 +11,6 @@ const navLinks = [
   { href: "/chat", label: "Chat" },
   { href: "/agents", label: "Agents" },
   { href: "/competitions", label: "Competitions" },
-  { href: "/keys", label: "Keys" },
 ];
 
 const externalLinks = [
