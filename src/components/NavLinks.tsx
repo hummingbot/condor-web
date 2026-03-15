@@ -22,10 +22,10 @@ export function NavLinks() {
             key={link.href}
             href={link.href}
             className={cn(
-              "px-3 py-1.5 text-sm rounded-md transition-colors",
+              "px-2.5 py-1 text-xs rounded transition-colors",
               active
-                ? "bg-accent text-foreground font-medium"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                ? "text-foreground bg-secondary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             {link.label}

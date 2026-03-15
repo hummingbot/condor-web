@@ -1,26 +1,14 @@
 import { prisma } from "@/lib/prisma";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EquityCurveChart } from "@/components/EquityCurveChart";
 
 export const dynamic = "force-dynamic";
 
-function PnlCell({ value }: { value: number }) {
-  const isPos = value >= 0;
+function PnlText({ value }: { value: number }) {
   return (
-    <span className={`font-mono font-semibold tabular-nums ${isPos ? "text-emerald-500" : "text-red-500"}`}>
-      {isPos ? "+" : ""}{value.toFixed(2)}%
+    <span className={`font-mono tabular-nums ${value >= 0 ? "text-emerald-500" : "text-red-400"}`}>
+      {value >= 0 ? "+" : ""}{value.toFixed(2)}%
     </span>
   );
-}
-
-function RankIcon({ rank }: { rank: number }) {
-  if (rank === 1) return <span title="1st">🥇</span>;
-  if (rank === 2) return <span title="2nd">🥈</span>;
-  if (rank === 3) return <span title="3rd">🥉</span>;
-  return <span className="text-muted-foreground font-mono text-sm">#{rank}</span>;
 }
 
 export default async function CompetitionsPage() {
@@ -40,32 +28,24 @@ export default async function CompetitionsPage() {
   const now = new Date();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Live Competitions</h1>
-        <p className="text-muted-foreground mt-1">
-          Prove your agent can trade. Run{" "}
-          <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/compete join &lt;id&gt;</code>{" "}
-          in Condor to enter.
+        <h1 className="text-xl font-semibold tracking-tight">Competitions</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Live agent performance. Run{" "}
+          <code className="text-xs bg-secondary px-1.5 py-0.5 rounded">/compete join &lt;id&gt;</code>
+          {" "}in Condor to enter.
         </p>
       </div>
 
-      <Separator />
-
       {competitions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
-          <span className="text-5xl">🏆</span>
-          <h3 className="text-lg font-semibold">No active competitions</h3>
-          <p className="text-muted-foreground text-sm">Check back soon for upcoming events.</p>
-        </div>
+        <p className="text-sm text-muted-foreground py-16 text-center">No active competitions.</p>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-12">
           {competitions.map((comp) => {
             const isLive = comp.startTime <= now && comp.endTime >= now;
-            const isEnded = comp.endTime < now;
-            const daysLeft = Math.ceil((comp.endTime.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            const daysLeft = Math.ceil((comp.endTime.getTime() - now.getTime()) / 86400000);
 
-            // Build chart series — sorted by final pnl desc
             const chartSeries = comp.entries
               .filter((e) => e.snapshots.length > 1)
               .map((e) => ({
@@ -78,119 +58,83 @@ export default async function CompetitionsPage() {
                 })),
               }));
 
-            const hasChart = chartSeries.length > 0;
-
             return (
-              <Card key={comp.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <CardTitle>{comp.name}</CardTitle>
-                        {isLive && (
-                          <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
-                            Live
-                          </Badge>
-                        )}
-                        {isEnded && <Badge variant="secondary">Ended</Badge>}
-                        {!isLive && !isEnded && <Badge variant="outline">Upcoming</Badge>}
-                      </div>
-                      {comp.description && (
-                        <CardDescription>{comp.description}</CardDescription>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        {isLive
-                          ? `${daysLeft}d remaining`
-                          : `Ended ${comp.endTime.toLocaleDateString()}`}
-                        {" · "}{comp.entries.length} participants
-                      </p>
-                    </div>
-                    {comp.prizePool && (
-                      <div className="text-right shrink-0">
-                        <p className="text-xs text-muted-foreground">Prize Pool</p>
-                        <p className="text-lg font-bold text-emerald-500">{comp.prizePool}</p>
-                      </div>
+              <div key={comp.id} className="space-y-6">
+                {/* Header */}
+                <div className="flex items-baseline justify-between">
+                  <div className="flex items-baseline gap-3">
+                    <h2 className="text-base font-medium">{comp.name}</h2>
+                    {isLive && (
+                      <span className="text-xs text-emerald-500 flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                        live · {daysLeft}d left
+                      </span>
                     )}
                   </div>
-                </CardHeader>
+                  {comp.prizePool && (
+                    <span className="text-sm font-mono text-muted-foreground">{comp.prizePool}</span>
+                  )}
+                </div>
 
-                <CardContent className="space-y-6">
-                  {/* Equity curve chart */}
-                  {hasChart && (
-                    <div className="rounded-lg border bg-card overflow-hidden">
-                      <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                          Equity Curves — PnL %
-                        </p>
-                        <div className="flex items-center gap-3">
-                          {chartSeries.map((s, i) => (
-                            <span key={s.entryId} className="flex items-center gap-1.5 text-xs">
-                              <span
-                                className="w-2.5 h-0.5 rounded-full inline-block"
-                                style={{ backgroundColor: ["#10b981","#3b82f6","#f59e0b","#a855f7","#ef4444","#14b8a6"][i % 6] }}
-                              />
-                              {s.agentName}
+                {/* Chart */}
+                {chartSeries.length > 1 && (
+                  <div className="rounded-lg border border-border/50 overflow-hidden">
+                    <div className="px-4 pt-3 pb-1 flex items-center gap-4">
+                      {chartSeries.map((s, i) => (
+                        <span key={s.entryId} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <span
+                            className="w-3 h-px inline-block"
+                            style={{ backgroundColor: ["#10b981","#3b82f6","#f59e0b","#a855f7","#ef4444","#14b8a6"][i % 6] }}
+                          />
+                          {s.agentName}
+                        </span>
+                      ))}
+                    </div>
+                    <EquityCurveChart series={chartSeries} height={240} />
+                  </div>
+                )}
+
+                {/* Leaderboard */}
+                {comp.entries.length > 0 && (
+                  <div>
+                    <div className="grid grid-cols-[1.5rem_1fr_auto_auto_auto] gap-x-6 py-2 text-xs text-muted-foreground border-b border-border/50">
+                      <span>#</span>
+                      <span>Agent</span>
+                      <span>Trades</span>
+                      <span>Volume</span>
+                      <span className="text-right">PnL</span>
+                    </div>
+                    {comp.entries.map((entry, i) => (
+                      <div
+                        key={entry.id}
+                        className="grid grid-cols-[1.5rem_1fr_auto_auto_auto] gap-x-6 py-3 text-sm border-b border-border/30 items-center"
+                      >
+                        <span className="text-xs text-muted-foreground font-mono">{i + 1}</span>
+                        <div>
+                          <span className="font-medium">{entry.agentName}</span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {entry.user?.username || "anon"}
+                          </span>
+                          {entry.pair && (
+                            <span className="text-xs text-muted-foreground ml-2 font-mono">
+                              {entry.pair}
                             </span>
-                          ))}
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {entry.tradesCount.toLocaleString()}
+                        </span>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          ${entry.totalVolume.toLocaleString()}
+                        </span>
+                        <div className="text-right text-sm">
+                          <PnlText value={entry.pnlPct} />
                         </div>
                       </div>
-                      <EquityCurveChart series={chartSeries} height={260} />
-                    </div>
-                  )}
-
-                  {/* Leaderboard */}
-                  {comp.entries.length === 0 ? (
-                    <p className="text-center text-muted-foreground text-sm py-8">
-                      No entries yet — be the first!
-                    </p>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">Rank</TableHead>
-                          <TableHead>Agent</TableHead>
-                          <TableHead>Trader</TableHead>
-                          <TableHead>Market</TableHead>
-                          <TableHead className="text-right">Trades</TableHead>
-                          <TableHead className="text-right">Volume</TableHead>
-                          <TableHead className="text-right">PnL</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {comp.entries.map((entry, i) => (
-                          <TableRow key={entry.id}>
-                            <TableCell className="text-center">
-                              <RankIcon rank={i + 1} />
-                            </TableCell>
-                            <TableCell className="font-medium">{entry.agentName}</TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                              {entry.user?.username || "anon"}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {entry.exchange && entry.pair ? (
-                                <span className="font-mono">
-                                  {entry.pair}
-                                  <span className="text-muted-foreground ml-1 text-xs">{entry.exchange}</span>
-                                </span>
-                              ) : "—"}
-                            </TableCell>
-                            <TableCell className="text-right text-sm tabular-nums">
-                              {entry.tradesCount.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-right text-sm text-muted-foreground tabular-nums">
-                              ${entry.totalVolume.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <PnlCell value={entry.pnlPct} />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
