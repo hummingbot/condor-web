@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { EquityCurveChart } from "@/components/EquityCurveChart";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -77,18 +78,25 @@ export default async function CompetitionsPage() {
                 </div>
 
                 {/* Chart */}
-                {chartSeries.length > 1 && (
+                {chartSeries.length > 0 && (
                   <div className="rounded-lg border border-border/50 overflow-hidden">
-                    <div className="px-4 pt-3 pb-1 flex items-center gap-4">
-                      {chartSeries.map((s, i) => (
-                        <span key={s.entryId} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <span
-                            className="w-3 h-px inline-block"
-                            style={{ backgroundColor: ["#10b981","#3b82f6","#f59e0b","#a855f7","#ef4444","#14b8a6"][i % 6] }}
-                          />
-                          {s.agentName}
-                        </span>
-                      ))}
+                    <div className="px-4 pt-3 pb-1 flex items-center gap-5 flex-wrap">
+                      {chartSeries.map((s, i) => {
+                        const last = s.points[s.points.length - 1]?.value ?? 0;
+                        const isPos = last >= 0;
+                        return (
+                          <span key={s.entryId} className="flex items-center gap-1.5 text-xs">
+                            <span
+                              className="w-3 h-px inline-block shrink-0"
+                              style={{ backgroundColor: ["#10b981","#3b82f6","#f59e0b","#a855f7","#ef4444","#14b8a6"][i % 6] }}
+                            />
+                            <span className="text-muted-foreground">{s.agentName}</span>
+                            <span className={cn("font-mono", isPos ? "text-emerald-500" : "text-red-400")}>
+                              {isPos ? "+" : ""}{last.toFixed(2)}%
+                            </span>
+                          </span>
+                        );
+                      })}
                     </div>
                     <EquityCurveChart series={chartSeries} height={240} />
                   </div>

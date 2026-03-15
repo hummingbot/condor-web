@@ -8,8 +8,14 @@ const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
-  title: "Condor",
-  description: "Community hub for Condor AI trading agents",
+  title: { default: "Condor", template: "%s · Condor" },
+  description: "Community hub for AI trading agents built on Hummingbot. Share strategies, watch live PnL, compete.",
+  openGraph: {
+    title: "Condor",
+    description: "AI trading agents — live feed, strategy library, competitions.",
+    type: "website",
+  },
+  twitter: { card: "summary" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,35 +1,35 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   createChart,
   ColorType,
   LineStyle,
-  LineSeries,
+  AreaSeries,
+  HistogramSeries,
   type IChartApi,
   type UTCTimestamp,
 } from "lightweight-charts";
+import { cn } from "@/lib/utils";
 
-interface SeriesPoint {
-  time: number;
-  value: number;
-}
-
+interface Point { time: number; value: number }
 interface SeriesData {
   entryId: string;
   agentName: string;
   username: string;
-  points: SeriesPoint[];
+  points: Point[];
 }
 
-const PALETTE = [
-  "#10b981", // emerald
-  "#3b82f6", // blue
-  "#f59e0b", // amber
-  "#a855f7", // purple
-  "#ef4444", // red
-  "#14b8a6", // teal
-];
+const PALETTE = ["#10b981","#3b82f6","#f59e0b","#a855f7","#ef4444","#14b8a6"];
+const RANGES = ["1D","7D","All"] as const;
+type Range = typeof RANGES[number];
+
+function filterByRange(points: Point[], range: Range): Point[] {
+  if (range === "All") return points;
+  const now = Date.now() / 1000;
+  const cutoff = range === "1D" ? now - 86400 : now - 7 * 86400;
+  return points.filter((p) => p.time >= cutoff);
+}
 
 interface Props {
   series: SeriesData[];
@@ -39,6 +39,7 @@ interface Props {
 export function EquityCurveChart({ series, height = 260 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const [range, setRange] = useState<Range>("7D");
 
   useEffect(() => {
     if (!containerRef.current || series.length === 0) return;
@@ -46,31 +47,32 @@ export function EquityCurveChart({ series, height = 260 }: Props) {
     const chart = createChart(containerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "rgba(148,163,184,0.8)",
-        fontFamily: "var(--font-geist-sans, system-ui, sans-serif)",
-        fontSize: 11,
+        textColor: "rgba(148,163,184,0.7)",
+        fontFamily: "var(--font-geist-mono, monospace)",
+        fontSize: 10,
       },
       grid: {
-        vertLines: { color: "rgba(255,255,255,0.05)", style: LineStyle.Dotted },
-        horzLines: { color: "rgba(255,255,255,0.05)", style: LineStyle.Dotted },
+        vertLines: { visible: false },
+        horzLines: { color: "rgba(255,255,255,0.04)" },
       },
       crosshair: {
-        vertLine: { color: "rgba(148,163,184,0.5)", width: 1, style: LineStyle.Dashed },
-        horzLine: { color: "rgba(148,163,184,0.5)", width: 1, style: LineStyle.Dashed },
+        mode: 1,
+        vertLine: { color: "rgba(148,163,184,0.3)", width: 1, style: LineStyle.Dashed },
+        horzLine: { color: "rgba(148,163,184,0.3)", width: 1, style: LineStyle.Dashed },
       },
       rightPriceScale: {
-        borderColor: "rgba(255,255,255,0.08)",
-        scaleMargins: { top: 0.1, bottom: 0.1 },
+        borderVisible: false,
+        scaleMargins: { top: 0.08, bottom: 0.08 },
       },
       timeScale: {
-        borderColor: "rgba(255,255,255,0.08)",
+        borderVisible: false,
         timeVisible: true,
         secondsVisible: false,
         fixLeftEdge: true,
         fixRightEdge: true,
       },
       handleScroll: { mouseWheel: true, pressedMouseMove: true },
-      handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
+      handleScale: { mouseWheel: true, pinch: true },
       height,
       width: containerRef.current.clientWidth,
     });
@@ -78,39 +80,40 @@ export function EquityCurveChart({ series, height = 260 }: Props) {
     chartRef.current = chart;
 
     series.forEach((s, i) => {
-      if (s.points.length === 0) return;
+      const filtered = filterByRange(s.points, range);
+      if (filtered.length === 0) return;
 
       const color = PALETTE[i % PALETTE.length];
+      const isPositiveFinal = filtered[filtered.length - 1].value >= 0;
 
-      const line = chart.addSeries(LineSeries, {
-        color,
+      const area = chart.addSeries(AreaSeries, {
+        lineColor: color,
+        topColor: `${color}28`,
+        bottomColor: `${color}04`,
         lineWidth: 2,
-        title: s.agentName,
         priceFormat: {
           type: "custom",
           minMove: 0.01,
           formatter: (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`,
         },
         crosshairMarkerVisible: true,
-        crosshairMarkerRadius: 4,
+        crosshairMarkerRadius: 3,
         lastValueVisible: true,
         priceLineVisible: false,
+        title: "",
       });
 
-      line.setData(
-        s.points.map((p) => ({
-          time: p.time as UTCTimestamp,
-          value: p.value,
-        }))
-      );
+      area.setData(filtered.map((p) => ({
+        time: p.time as UTCTimestamp,
+        value: p.value,
+      })));
 
-      // Zero line on first series
       if (i === 0) {
-        line.createPriceLine({
+        area.createPriceLine({
           price: 0,
-          color: "rgba(255,255,255,0.15)",
+          color: "rgba(255,255,255,0.1)",
           lineWidth: 1,
-          lineStyle: LineStyle.Dashed,
+          lineStyle: LineStyle.Solid,
           axisLabelVisible: false,
           title: "",
         });
@@ -130,7 +133,28 @@ export function EquityCurveChart({ series, height = 260 }: Props) {
       chart.remove();
       chartRef.current = null;
     };
-  }, [series, height]);
+  }, [series, height, range]);
 
-  return <div ref={containerRef} className="w-full" style={{ height }} />;
+  return (
+    <div>
+      {/* Range selector */}
+      <div className="flex items-center justify-end gap-1 px-4 pb-1">
+        {RANGES.map((r) => (
+          <button
+            key={r}
+            onClick={() => setRange(r)}
+            className={cn(
+              "text-[10px] px-2 py-0.5 rounded transition-colors",
+              range === r
+                ? "bg-secondary text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+      <div ref={containerRef} className="w-full" style={{ height }} />
+    </div>
+  );
 }

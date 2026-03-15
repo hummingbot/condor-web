@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 
@@ -30,7 +31,12 @@ export default async function AgentsPage() {
             <div key={agent.id} className="py-5 flex items-start justify-between gap-6">
               <div className="space-y-1.5 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{agent.name}</span>
+                  <Link
+                    href={`/agents/${agent.agentKey}`}
+                    className="text-sm font-medium hover:text-muted-foreground transition-colors"
+                  >
+                    {agent.name}
+                  </Link>
                   <span className="text-xs text-muted-foreground font-mono">{agent.agentKey}</span>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
