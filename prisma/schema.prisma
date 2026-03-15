@@ -12,12 +12,41 @@ model User {
   username  String?
   createdAt DateTime @default(now())
 
-  webToken  WebToken?
-  messages  ChatMessage[]
-  pending   PendingMessage[]
-  agents    AgentPublish[]
-  entries   CompetitionEntry[]
-  trades    Trade[]
+  webToken      WebToken?
+  messages      ChatMessage[]
+  pending       PendingMessage[]
+  agents        AgentPublish[]
+  entries       CompetitionEntry[]
+  trades        Trade[]
+  exchangeKeys  ExchangeKey[]
+  wallets       WalletAddress[]
+}
+
+model ExchangeKey {
+  id        String   @id @default(cuid())
+  userId    BigInt
+  user      User     @relation(fields: [userId], references: [id])
+  exchange  String   // binance, kucoin, coinbase, etc.
+  apiKey    String
+  apiSecret String   // read-only key — no withdrawal permissions
+  label     String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@unique([userId, exchange, apiKey])
+}
+
+model WalletAddress {
+  id        String   @id @default(cuid())
+  userId    BigInt
+  user      User     @relation(fields: [userId], references: [id])
+  chain     String   // solana, ethereum, arbitrum, base, etc.
+  address   String
+  label     String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@unique([userId, chain, address])
 }
 
 model WebToken {
