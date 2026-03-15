@@ -1,5 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 
+// Allow BigInt to serialize to JSON (Prisma BigInt fields like Telegram user IDs)
+(BigInt.prototype as unknown as { toJSON: () => string }).toJSON = function () {
+  return this.toString();
+};
+
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 export const prisma =
