@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { NavLinks } from "@/components/NavLinks";
 import "./globals.css";
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
@@ -12,12 +12,6 @@ export const metadata: Metadata = {
   title: "Condor — AI Trading Agents",
   description: "Community hub for Condor trading agent users",
 };
-
-const navLinks = [
-  { href: "/chat", label: "Chat" },
-  { href: "/agents", label: "Agents" },
-  { href: "/competitions", label: "Competitions" },
-];
 
 const externalLinks = [
   { href: "https://docs.hummingbot.org", label: "Install" },
@@ -37,17 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
             <Separator orientation="vertical" className="h-5" />
 
-            <nav className="flex items-center gap-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-accent"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+            <NavLinks />
 
             <div className="ml-auto flex items-center gap-1">
               {externalLinks.map((link) => (
